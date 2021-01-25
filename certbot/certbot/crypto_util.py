@@ -496,10 +496,7 @@ def _notAfterBefore(cert_path, method):
     # expects str/bytes and in Python 3 it expects its str type or the Python 2
     # equivalent of the type unicode.
     timestamp_bytes = b"".join(reformatted_timestamp)
-    if six.PY3:
-        timestamp_str = timestamp_bytes.decode('ascii')
-    else:
-        timestamp_str = timestamp_bytes
+    timestamp_str = timestamp_bytes.decode('ascii') if six.PY3 else timestamp_bytes
     return pyrfc3339.parse(timestamp_str)
 
 

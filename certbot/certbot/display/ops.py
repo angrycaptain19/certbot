@@ -223,14 +223,13 @@ def _choose_names_manually(prompt_prefix=""):
                 "{0}Would you like to re-enter the names?{0}").format(
                     os.linesep)
 
-        if retry_message:
-            # We had error in input
-            retry = z_util(interfaces.IDisplay).yesno(retry_message,
-                                                      force_interactive=True)
-            if retry:
-                return _choose_names_manually()
-        else:
+        if not retry_message:
             return domain_list
+        # We had error in input
+        retry = z_util(interfaces.IDisplay).yesno(retry_message,
+                                                  force_interactive=True)
+        if retry:
+            return _choose_names_manually()
     return []
 
 

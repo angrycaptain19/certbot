@@ -136,7 +136,7 @@ def choose_plugin(prepared, question):
     opts = [plugin_ep.description_with_name +
             (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
-    names = set(plugin_ep.name for plugin_ep in prepared)
+    names = {plugin_ep.name for plugin_ep in prepared}
 
     while True:
         disp = z_util(interfaces.IDisplay)
@@ -247,10 +247,9 @@ def set_configurator(previously, now):
     if not now:
         # we're not actually setting anything
         return previously
-    if previously:
-        if previously != now:
-            msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
-            raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
+    if previously and previously != now:
+        msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
+        raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
 
 

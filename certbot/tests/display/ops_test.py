@@ -55,12 +55,12 @@ class GetEmailTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_invalid_flag(self, mock_get_utility):
-        invalid_txt = "There seem to be problems"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self._call()
+            invalid_txt = "There seem to be problems"
             self.assertTrue(invalid_txt not in mock_input.call_args[0][0])
             self._call(invalid=True)
             self.assertTrue(invalid_txt in mock_input.call_args[0][0])
@@ -78,12 +78,12 @@ class GetEmailTest(unittest.TestCase):
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_optional_invalid_unsafe(self, mock_get_utility):
-        invalid_txt = "There seem to be problems"
         mock_input = mock_get_utility().input
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
             self._call(invalid=True)
+            invalid_txt = "There seem to be problems"
             self.assertTrue(invalid_txt in mock_input.call_args[0][0])
 
 

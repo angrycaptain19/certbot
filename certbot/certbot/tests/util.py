@@ -170,7 +170,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     :rtype: mock.MagicMock
 
     """
-    stdout = stdout if stdout else six.StringIO()
+    stdout = stdout or six.StringIO()
 
     freezable_mock = _create_get_utility_mock_with_stdout(stdout)
     return mock.patch(target, new=freezable_mock)
@@ -289,8 +289,7 @@ def _create_get_utility_mock_with_stdout(stdout):
 def _assert_valid_call(*args, **kwargs):
     assert_args = [args[0] if args else kwargs['message']]
 
-    assert_kwargs = {}
-    assert_kwargs['default'] = kwargs.get('default', None)
+    assert_kwargs = {'default': kwargs.get('default', None)}
     assert_kwargs['cli_flag'] = kwargs.get('cli_flag', None)
     assert_kwargs['force_interactive'] = kwargs.get('force_interactive', False)
 
@@ -344,10 +343,7 @@ def _handle_lock(event_in, event_out, path):
     :param multiprocessing.Event event_out: event object to signal when the lock is acquired
     :param path: the path to lock
     """
-    if os.path.isdir(path):
-        my_lock = lock.lock_dir(path)
-    else:
-        my_lock = lock.LockFile(path)
+    my_lock = lock.lock_dir(path) if os.path.isdir(path) else lock.LockFile(path)
     try:
         event_out.set()
         assert event_in.wait(timeout=20), 'Timeout while waiting to release the lock.'

@@ -55,24 +55,29 @@ def determine_user_agent(config):
     # WARNING: To ensure changes are in line with Certbot's privacy
     # policy, talk to a core Certbot team member before making any
     # changes here.
-    if config.user_agent is None:
-        ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
-              "({5}; flags: {6}) Py/{7}")
-        if os.environ.get("CERTBOT_DOCS") == "1":
-            cli_command = "certbot(-auto)"
-            os_info = "OS_NAME OS_VERSION"
-            python_version = "major.minor.patchlevel"
-        else:
-            cli_command = cli.cli_command
-            os_info = util.get_os_info_ua()
-            python_version = platform.python_version()
-        ua = ua.format(certbot.__version__, cli_command, os_info,
-                       config.authenticator, config.installer, config.verb,
-                       ua_flags(config), python_version,
-                       "; " + config.user_agent_comment if config.user_agent_comment else "")
+    if config.user_agent is not None:
+        return config.user_agent
+    ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
+          "({5}; flags: {6}) Py/{7}")
+    if os.environ.get("CERTBOT_DOCS") == "1":
+        cli_command = "certbot(-auto)"
+        os_info = "OS_NAME OS_VERSION"
+        python_version = "major.minor.patchlevel"
     else:
-        ua = config.user_agent
-    return ua
+        cli_command = cli.cli_command
+        os_info = util.get_os_info_ua()
+        python_version = platform.python_version()
+    return ua.format(
+        certbot.__version__,
+        cli_command,
+        os_info,
+        config.authenticator,
+        config.installer,
+        config.verb,
+        ua_flags(config),
+        python_version,
+        "; " + config.user_agent_comment if config.user_agent_comment else "",
+    )
 
 def ua_flags(config):
     "Turn some very important CLI flags into clues in the user agent."
@@ -205,18 +210,17 @@ def perform_registration(acme, config, tos_cb):
     else:
         eab = None
 
-    if acme.external_account_required():
-        if not eab_credentials_supplied:
-            msg = ("Server requires external account binding."
-                   " Please use --eab-kid and --eab-hmac-key.")
-            raise errors.Error(msg)
+    if acme.external_account_required() and not eab_credentials_supplied:
+        msg = ("Server requires external account binding."
+               " Please use --eab-kid and --eab-hmac-key.")
+        raise errors.Error(msg)
 
     try:
         newreg = messages.NewRegistration.from_data(email=config.email,
                                                     external_account_binding=eab)
         return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
-        if e.code == "invalidEmail" or e.code == "invalidContact":
+        if e.code in ["invalidEmail", "invalidContact"]:
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "
@@ -373,7 +377,7 @@ class Client(object):
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
-        auth_domains = set(a.body.identifier.value for a in authzr)
+        auth_domains = {a.body.identifier.value for a in authzr}
         successful_domains = [d for d in domains if d in auth_domains]
 
         # allow_subset_of_names is currently disabled for wildcard
@@ -590,8 +594,8 @@ class Client(object):
                     "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
-        msg = ("We were unable to restart web server")
         if enhanced:
+            msg = ("We were unable to restart web server")
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
@@ -702,10 +706,12 @@ def validate_key_csr(privkey, csr=None):
 
         # If both CSR and key are provided, the key must be the same key used
         # in the CSR.
-        if csr.data and privkey.pem:
-            if not crypto_util.csr_matches_pubkey(
-                    csr.data, privkey.pem):
-                raise errors.Error("The key and CSR do not match")
+        if (
+            csr.data
+            and privkey.pem
+            and not crypto_util.csr_matches_pubkey(csr.data, privkey.pem)
+        ):
+            raise errors.Error("The key and CSR do not match")
 
 
 def rollback(default_installer, checkpoints, config, plugins):

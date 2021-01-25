@@ -21,10 +21,7 @@ class TLSServer(socketserver.TCPServer):
 
     def __init__(self, *args, **kwargs):
         self.ipv6 = kwargs.pop("ipv6", False)
-        if self.ipv6:
-            self.address_family = socket.AF_INET6
-        else:
-            self.address_family = socket.AF_INET
+        self.address_family = socket.AF_INET6 if self.ipv6 else socket.AF_INET
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             "method", crypto_util._DEFAULT_SSL_METHOD)
@@ -166,10 +163,7 @@ class HTTPServer(BaseHTTPServer.HTTPServer):
 
     def __init__(self, *args, **kwargs):
         self.ipv6 = kwargs.pop("ipv6", False)
-        if self.ipv6:
-            self.address_family = socket.AF_INET6
-        else:
-            self.address_family = socket.AF_INET
+        self.address_family = socket.AF_INET6 if self.ipv6 else socket.AF_INET
         BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
 
 

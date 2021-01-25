@@ -322,24 +322,24 @@ def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
         if not choices:
             raise errors.Error("No existing certificates found.")
         if allow_multiple:
-            if not custom_prompt:
-                prompt = "Which certificate(s) would you like to {0}?".format(verb)
-            else:
+            if custom_prompt:
                 prompt = custom_prompt
+            else:
+                prompt = "Which certificate(s) would you like to {0}?".format(verb)
             code, certnames = disp.checklist(
                 prompt, choices, cli_flag="--cert-name", force_interactive=True)
             if code != display_util.OK:
                 raise errors.Error("User ended interaction.")
         else:
-            if not custom_prompt:
-                prompt = "Which certificate would you like to {0}?".format(verb)
-            else:
+            if custom_prompt:
                 prompt = custom_prompt
 
+            else:
+                prompt = "Which certificate would you like to {0}?".format(verb)
             code, index = disp.menu(
                 prompt, choices, cli_flag="--cert-name", force_interactive=True)
 
-            if code != display_util.OK or index not in range(0, len(choices)):
+            if code != display_util.OK or index not in range(len(choices)):
                 raise errors.Error("User ended interaction.")
             certnames = [choices[index]]
     return certnames
@@ -356,9 +356,7 @@ def _report_lines(msgs):
 
 def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
-    certinfo = []
-    for cert in parsed_certs:
-        certinfo.append(human_readable_cert_info(config, cert))
+    certinfo = [human_readable_cert_info(config, cert) for cert in parsed_certs]
     return "\n".join(certinfo)
 
 
@@ -370,15 +368,14 @@ def _describe_certs(config, parsed_certs, parse_failures):
 
     if not parsed_certs and not parse_failures:
         notify("No certificates found.")
-    else:
-        if parsed_certs:
-            match = "matching " if config.certname or config.domains else ""
-            notify("Found the following {0}certs:".format(match))
-            notify(_report_human_readable(config, parsed_certs))
-        if parse_failures:
-            notify("\nThe following renewal configurations "
-               "were invalid:")
-            notify(_report_lines(parse_failures))
+    if parsed_certs:
+        match = "matching " if config.certname or config.domains else ""
+        notify("Found the following {0}certs:".format(match))
+        notify(_report_human_readable(config, parsed_certs))
+    if parse_failures:
+        notify("\nThe following renewal configurations "
+           "were invalid:")
+        notify(_report_lines(parse_failures))
 
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification("\n".join(out), pause=False, wrap=False)

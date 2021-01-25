@@ -166,7 +166,7 @@ class HelpfulArgumentParser(object):
             usage += COMMAND_OVERVIEW % (apache_doc, nginx_doc)
         else:
             custom = VERB_HELP_MAP.get(help_arg, {}).get("usage", None)
-            usage = custom if custom else usage
+            usage = custom or usage
 
         return usage
 
@@ -223,10 +223,11 @@ class HelpfulArgumentParser(object):
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
 
-        if parsed_args.allow_subset_of_names:
-            if any(util.is_wildcard_domain(d) for d in parsed_args.domains):
-                raise errors.Error("Using --allow-subset-of-names with a"
-                                   " wildcard domain is not supported.")
+        if parsed_args.allow_subset_of_names and any(
+            util.is_wildcard_domain(d) for d in parsed_args.domains
+        ):
+            raise errors.Error("Using --allow-subset-of-names with a"
+                               " wildcard domain is not supported.")
 
         if parsed_args.hsts and parsed_args.auto_hsts:
             raise errors.Error(

@@ -56,10 +56,11 @@ class ACMEServer(object):
         self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
         self._dns_server = dns_server
         self._http_01_port = http_01_port
-        if http_01_port != DEFAULT_HTTP_01_PORT:
-            if self._acme_type != 'pebble' or self._proxy:
-                raise ValueError('setting http_01_port is not currently supported '
-                                  'with boulder or the HTTP proxy')
+        if http_01_port != DEFAULT_HTTP_01_PORT and (
+            self._acme_type != 'pebble' or self._proxy
+        ):
+            raise ValueError('setting http_01_port is not currently supported '
+                              'with boulder or the HTTP proxy')
 
     def start(self):
         """Start the test stack"""

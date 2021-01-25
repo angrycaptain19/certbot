@@ -82,9 +82,8 @@ class ApacheParser(object):
                             self.configurator.option("vhost_files"))
 
         # check to see if there were unparsed define statements
-        if version < (2, 4):
-            if self.find_dir("Define", exclude=False):
-                raise errors.PluginError("Error parsing runtime variables")
+        if version < (2, 4) and self.find_dir("Define", exclude=False):
+            raise errors.PluginError("Error parsing runtime variables")
 
     def init_augeas(self):
         """ Initialize the actual Augeas instance """
@@ -819,10 +818,7 @@ class ApacheParser(object):
         try:
             new_file_match = os.path.basename(filepath)
             existing_matches = self.parser_paths[os.path.dirname(filepath)]
-            if "*" in existing_matches:
-                use_new = False
-            else:
-                use_new = True
+            use_new = "*" not in existing_matches
             remove_old = new_file_match == "*"
         except KeyError:
             use_new = True

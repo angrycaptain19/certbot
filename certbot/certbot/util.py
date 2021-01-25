@@ -130,11 +130,10 @@ def exe_exists(exe):
     path, _ = os.path.split(exe)
     if path:
         return filesystem.is_executable(exe)
-    for path in os.environ["PATH"].split(os.pathsep):
-        if filesystem.is_executable(os.path.join(path, exe)):
-            return True
-
-    return False
+    return any(
+        filesystem.is_executable(os.path.join(path, exe))
+        for path in os.environ["PATH"].split(os.pathsep)
+    )
 
 
 def lock_dir_until_exit(dir_path):

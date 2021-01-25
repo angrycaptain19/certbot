@@ -287,7 +287,7 @@ class AugeasBlockNode(AugeasDirectiveNode):
         return new_block
 
     # pylint: disable=unused-argument
-    def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
+    def add_child_directive(self, name, parameters=None, position=None):    # pragma: no cover
         """Adds a new DirectiveNode to the sequence of children"""
 
         if not parameters:
@@ -308,13 +308,12 @@ class AugeasBlockNode(AugeasDirectiveNode):
             apache_util.get_file_path(realpath)
         )
 
-        new_dir = AugeasDirectiveNode(name=name,
+        return AugeasDirectiveNode(name=name,
                                       parameters=parameters,
                                       enabled=enabled,
                                       ancestor=assertions.PASS,
                                       filepath=apache_util.get_file_path(realpath),
                                       metadata=new_metadata)
-        return new_dir
 
     def add_child_comment(self, comment="", position=None):
         """Adds a new CommentNode to the sequence of children"""
@@ -330,23 +329,18 @@ class AugeasBlockNode(AugeasDirectiveNode):
         # Set the comment content
         self.parser.aug.set(realpath, comment)
 
-        new_comment = AugeasCommentNode(comment=comment,
+        return AugeasCommentNode(comment=comment,
                                         ancestor=assertions.PASS,
                                         filepath=apache_util.get_file_path(realpath),
                                         metadata=new_metadata)
-        return new_comment
 
     def find_blocks(self, name, exclude=True):
         """Recursive search of BlockNodes from the sequence of children"""
 
-        nodes = []
         paths = self._aug_find_blocks(name)
         if exclude:
             paths = self.parser.exclude_dirs(paths)
-        for path in paths:
-            nodes.append(self._create_blocknode(path))
-
-        return nodes
+        return [self._create_blocknode(path) for path in paths]
 
     def find_directives(self, name, exclude=True):
         """Recursive search of DirectiveNodes from the sequence of children"""
@@ -374,14 +368,10 @@ class AugeasBlockNode(AugeasDirectiveNode):
         :param str comment: Comment content to search for.
         """
 
-        nodes = []
         ownpath = self.metadata.get("augeaspath")
 
         comments = self.parser.find_comments(comment, start=ownpath)
-        for com in comments:
-            nodes.append(self._create_commentnode(com))
-
-        return nodes
+        return [self._create_commentnode(com) for com in comments]
 
     def delete_child(self, child):
         """
