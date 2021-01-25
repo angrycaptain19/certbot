@@ -153,11 +153,15 @@ class ApacheHttp01(common.ChallengePerformer):
 
     def _relevant_vhosts(self):
         http01_port = str(self.configurator.config.http01_port)
-        relevant_vhosts = []
-        for vhost in self.configurator.vhosts:
-            if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):
-                if not vhost.ssl:
-                    relevant_vhosts.append(vhost)
+        relevant_vhosts = [
+            vhost
+            for vhost in self.configurator.vhosts
+            if any(
+                a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs
+            )
+            and not vhost.ssl
+        ]
+
         if not relevant_vhosts:
             raise errors.PluginError(
                 "Unable to find a virtual host listening on port {0} which is"
@@ -179,11 +183,7 @@ class ApacheHttp01(common.ChallengePerformer):
             finally:
                 filesystem.umask(old_umask)
 
-        responses = []
-        for achall in self.achalls:
-            responses.append(self._set_up_challenge(achall))
-
-        return responses
+        return [self._set_up_challenge(achall) for achall in self.achalls]
 
     def _set_up_challenge(self, achall):
         response, validation = achall.response_and_validation()

@@ -303,14 +303,16 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
-    if util.is_staging(config.server):
-        if not util.is_staging(original_server) or now_valid:
-            if not config.break_my_certs:
-                names = ", ".join(lineage.names())
-                raise errors.Error(
-                    "You've asked to renew/replace a seemingly valid certificate with "
-                    "a test certificate (domains: {0}). We will not do that "
-                    "unless you use the --break-my-certs flag!".format(names))
+    if (
+        util.is_staging(config.server)
+        and (not util.is_staging(original_server) or now_valid)
+        and not config.break_my_certs
+    ):
+        names = ", ".join(lineage.names())
+        raise errors.Error(
+            "You've asked to renew/replace a seemingly valid certificate with "
+            "a test certificate (domains: {0}). We will not do that "
+            "unless you use the --break-my-certs flag!".format(names))
 
 
 def renew_cert(config, domains, le_client, lineage):
@@ -373,14 +375,14 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         if (config.pre_hook is not None or
                 config.renew_hook is not None or config.post_hook is not None):
             notify("No hooks were run.")
-    elif renew_successes and not renew_failures:
+    elif not renew_failures:
         notify("Congratulations, all {renewal}s succeeded: ".format(renewal=renewal_noun))
         notify(report(renew_successes, "success"))
-    elif renew_failures and not renew_successes:
+    elif not renew_successes:
         notify_error("All %ss failed. The following certificates could "
                "not be renewed:", renewal_noun)
         notify_error(report(renew_failures, "failure"))
-    elif renew_failures and renew_successes:
+    else:
         notify("The following {renewal}s succeeded:".format(renewal=renewal_noun))
         notify(report(renew_successes, "success") + "\n")
         notify_error("The following %ss failed:", renewal_noun)

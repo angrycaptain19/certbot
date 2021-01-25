@@ -314,9 +314,9 @@ class AccountFileStorage(interfaces.AccountStorage):
         dir_path = link_func(server_path)
 
         # does an appropriate directory link to me? if so, make sure that's gone
-        reused_servers = {}
-        for k in constants.LE_REUSE_SERVERS:
-            reused_servers[constants.LE_REUSE_SERVERS[k]] = k
+        reused_servers = {
+            constants.LE_REUSE_SERVERS[k]: k for k in constants.LE_REUSE_SERVERS
+        }
 
         # is there a next one up?
         possible_next_link = True

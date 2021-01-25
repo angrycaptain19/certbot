@@ -325,13 +325,10 @@ class FileOutputDisplayTest(unittest.TestCase):
                     (display_util.CANCEL, -1))
 
     def test_methods_take_force_interactive(self):
+        getargspec = inspect.getargspec if six.PY2 else inspect.getfullargspec
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():
-            if six.PY2:
-                getargspec = inspect.getargspec
-            else:
-                getargspec = inspect.getfullargspec
             arg_spec = getargspec(getattr(self.displayer, name))  # pylint: disable=deprecated-method
             self.assertTrue("force_interactive" in arg_spec.args)
 
@@ -404,10 +401,10 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:
                 result = inspect.getargspec(method).keywords  # pylint:deprecated-method
-                self.assertFalse(result is None)
             else:
                 result = inspect.getfullargspec(method).varkw
-                self.assertFalse(result is None)
+
+            self.assertFalse(result is None)
 
 
 class SeparateListInputTest(unittest.TestCase):

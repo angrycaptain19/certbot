@@ -273,10 +273,8 @@ def relevant_values(all_values):
     plugins = plugins_disco.PluginsRegistry.find_all()
     namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
 
-    rv = dict(
-        (option, value)
-        for option, value in six.iteritems(all_values)
-        if _relevant(namespaces, option) and cli.option_was_set(option, value))
+    rv = {option: value for option, value in six.iteritems(all_values)
+            if _relevant(namespaces, option) and cli.option_was_set(option, value)}
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different
     # server defaults are used.
@@ -446,7 +444,7 @@ class RenewableCert(interfaces.RenewableCert):
         #       file at this stage?
         self.configuration = config_with_defaults(self.configfile)
 
-        if not all(x in self.configuration for x in ALL_FOUR):
+        if any(x not in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
                 "file reference".format(self.configfile))

@@ -114,8 +114,8 @@ class LockFileTest(test_util.TempDirTestCase):
             mocked_function = 'certbot._internal.lock.fcntl.lockf'
         else:
             mocked_function = 'certbot._internal.lock.msvcrt.locking'
-        msg = 'hi there'
         with mock.patch(mocked_function) as mock_lock:
+            msg = 'hi there'
             mock_lock.side_effect = IOError(msg)
             try:
                 self._call(self.lock_path)
@@ -129,9 +129,9 @@ class LockFileTest(test_util.TempDirTestCase):
             mock_function = 'certbot._internal.lock.filesystem.os.stat'
         else:
             mock_function = 'certbot._internal.lock.msvcrt.locking'
-        # The only expected errno are ENOENT and EACCES in lock module.
-        msg = 'hi there'
         with mock.patch(mock_function) as mock_os:
+            # The only expected errno are ENOENT and EACCES in lock module.
+            msg = 'hi there'
             mock_os.side_effect = OSError(msg)
             try:
                 self._call(self.lock_path)

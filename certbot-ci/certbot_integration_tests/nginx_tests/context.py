@@ -37,9 +37,16 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :param list args: list of arguments to pass to nginx
         :param bool force_renew: set to False to not renew by default
         """
-        command = ['--authenticator', 'nginx', '--installer', 'nginx',
-                   '--nginx-server-root', self.nginx_root]
-        command.extend(args)
+        command = [
+            '--authenticator',
+            'nginx',
+            '--installer',
+            'nginx',
+            '--nginx-server-root',
+            self.nginx_root,
+            *args,
+        ]
+
         return certbot_call.certbot_test(
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
             self.config_dir, self.workspace, force_renew=True)

@@ -56,14 +56,11 @@ def _wrap_lines(msg):
 
     """
     lines = msg.splitlines()
-    fixed_l = []
-
-    for line in lines:
-        fixed_l.append(textwrap.fill(
+    fixed_l = [textwrap.fill(
             line,
             80,
             break_long_words=False,
-            break_on_hyphens=False))
+            break_on_hyphens=False) for line in lines]
 
     return '\n'.join(fixed_l)
 
@@ -285,18 +282,18 @@ class FileDisplay(object):
                                    "blank to select all options shown",
                                    force_interactive=True)
 
-            if code == OK:
-                if not ans.strip():
-                    ans = " ".join(str(x) for x in range(1, len(tags)+1))
-                indices = separate_list_input(ans)
-                selected_tags = self._scrub_checklist_input(indices, tags)
-                if selected_tags:
-                    return code, selected_tags
-                self.outfile.write(
-                    "** Error - Invalid selection **%s" % os.linesep)
-                self.outfile.flush()
-            else:
+            if code != OK:
                 return code, []
+
+            if not ans.strip():
+                ans = " ".join(str(x) for x in range(1, len(tags)+1))
+            indices = separate_list_input(ans)
+            selected_tags = self._scrub_checklist_input(indices, tags)
+            if selected_tags:
+                return code, selected_tags
+            self.outfile.write(
+                "** Error - Invalid selection **%s" % os.linesep)
+            self.outfile.flush()
 
     def _return_default(self, prompt, default, cli_flag, force_interactive):
         """Should we return the default instead of prompting the user?

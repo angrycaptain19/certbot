@@ -306,7 +306,7 @@ def _find_lineage_for_domains(config, domains):
 
     if ident_names_cert is not None:
         return _handle_identical_cert_request(config, ident_names_cert)
-    elif subset_names_cert is not None:
+    else:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
     return None, None
 
@@ -364,12 +364,13 @@ def _find_lineage_for_domains_and_certname(config,  # type: configuration.Namesp
         return _find_lineage_for_domains(config, domains)
     lineage = cert_manager.lineage_for_certname(config, certname)
     if lineage:
-        if domains:
-            if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
-                _handle_unexpected_key_type_migration(config, lineage)
-                _ask_user_to_confirm_new_names(config, domains, certname,
-                                               lineage.names())  # raises if no
-                return "renew", lineage
+        if domains and set(
+            cert_manager.domains_for_certname(config, certname)
+        ) != set(domains):
+            _handle_unexpected_key_type_migration(config, lineage)
+            _ask_user_to_confirm_new_names(config, domains, certname,
+                                           lineage.names())  # raises if no
+            return "renew", lineage
         # unnecessarily specified domains or no domains specified
         return _handle_identical_cert_request(config, lineage)
     elif domains:
@@ -798,7 +799,7 @@ def _install_cert(config, le_client, domains, lineage=None):
     :rtype: None
 
     """
-    path_provider = lineage if lineage else config
+    path_provider = lineage or config
     assert path_provider.cert_path is not None
 
     le_client.deploy_certificate(domains, path_provider.key_path,
@@ -848,16 +849,15 @@ def install(config, plugins):
         raise errors.ConfigurationError("One or more of the requested enhancements "
                                         "require --cert-name to be provided")
 
-    if config.key_path and config.cert_path:
-        _check_certificate_and_key(config)
-        domains, _ = _find_domains_or_certname(config, installer)
-        le_client = _init_le_client(config, authenticator=None, installer=installer)
-        _install_cert(config, le_client, domains)
-    else:
+    if not config.key_path or not config.cert_path:
         raise errors.ConfigurationError("Path to certificate or key was not defined. "
             "If your certificate is managed by Certbot, please use --cert-name "
             "to define which certificate you would like to install.")
 
+    _check_certificate_and_key(config)
+    domains, _ = _find_domains_or_certname(config, installer)
+    le_client = _init_le_client(config, authenticator=None, installer=installer)
+    _install_cert(config, le_client, domains)
     if enhancements.are_requested(config):
         # In the case where we don't have certname, we have errored out already
         lineage = cert_manager.lineage_for_certname(config, config.certname)
@@ -1092,7 +1092,7 @@ def revoke(config, unused_plugins):
 
     if config.cert_path is None and config.certname:
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
-    elif not config.cert_path or (config.cert_path and config.certname):
+    elif not config.cert_path or config.certname:
         # intentionally not supporting --cert-path & --cert-name together,
         # to avoid dealing with mismatched values
         raise errors.Error("Error! Exactly one of --cert-path or --cert-name must be specified!")

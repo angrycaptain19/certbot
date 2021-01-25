@@ -660,16 +660,16 @@ class ClientV2(ClientBase):
         # pylint: disable=protected-access
         dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
 
-        identifiers = []
-        for name in dnsNames:
-            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
-                value=name))
+        identifiers = [messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name) for name in dnsNames]
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
-        authorizations = []
-        for url in body.authorizations:
-            authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
+        authorizations = [
+            self._authzr_from_response(self._post_as_get(url), uri=url)
+            for url in body.authorizations
+        ]
+
         return messages.OrderResource(
             body=body,
             uri=response.headers.get('Location'),
@@ -879,9 +879,11 @@ class BackwardsCompatibleClientV2(object):
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
             # pylint: disable=protected-access
             dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
-            authorizations = []
-            for domain in dnsNames:
-                authorizations.append(self.client.request_domain_challenges(domain))
+            authorizations = [
+                self.client.request_domain_challenges(domain)
+                for domain in dnsNames
+            ]
+
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
         return self.client.new_order(csr_pem)
 
@@ -897,32 +899,32 @@ class BackwardsCompatibleClientV2(object):
         :rtype: messages.OrderResource
 
         """
-        if self.acme_version == 1:
-            csr_pem = orderr.csr_pem
-            certr = self.client.request_issuance(
-                jose.ComparableX509(
-                    OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)),
-                    orderr.authorizations)
+        if self.acme_version != 1:
+            return self.client.finalize_order(orderr, deadline, fetch_alternative_chains)
+        csr_pem = orderr.csr_pem
+        certr = self.client.request_issuance(
+            jose.ComparableX509(
+                OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)),
+                orderr.authorizations)
 
-            chain = None
-            while datetime.datetime.now() < deadline:
-                try:
-                    chain = self.client.fetch_chain(certr)
-                    break
-                except errors.Error:
-                    time.sleep(1)
+        chain = None
+        while datetime.datetime.now() < deadline:
+            try:
+                chain = self.client.fetch_chain(certr)
+                break
+            except errors.Error:
+                time.sleep(1)
 
-            if chain is None:
-                raise errors.TimeoutError(
-                    'Failed to fetch chain. You should not deploy the generated '
-                    'certificate, please rerun the command for a new one.')
+        if chain is None:
+            raise errors.TimeoutError(
+                'Failed to fetch chain. You should not deploy the generated '
+                'certificate, please rerun the command for a new one.')
 
-            cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
-            chain = crypto_util.dump_pyopenssl_chain(chain).decode()
+        cert = OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
+        chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
-            return orderr.update(fullchain_pem=(cert + chain))
-        return self.client.finalize_order(orderr, deadline, fetch_alternative_chains)
+        return orderr.update(fullchain_pem=(cert + chain))
 
     def revoke(self, cert, rsn):
         """Revoke certificate.
@@ -1063,19 +1065,18 @@ class ClientNetwork(object):
             raise errors.ConflictError(response.headers.get('Location'))
 
         if not response.ok:
-            if jobj is not None:
-                if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
-                    logger.debug(
-                        'Ignoring wrong Content-Type (%r) for JSON Error',
-                        response_ct)
-                try:
-                    raise messages.Error.from_json(jobj)
-                except jose.DeserializationError as error:
-                    # Couldn't deserialize JSON object
-                    raise errors.ClientError((response, error))
-            else:
+            if jobj is None:
                 # response is not JSON object
                 raise errors.ClientError(response)
+            if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
+                logger.debug(
+                    'Ignoring wrong Content-Type (%r) for JSON Error',
+                    response_ct)
+            try:
+                raise messages.Error.from_json(jobj)
+            except jose.DeserializationError as error:
+                # Couldn't deserialize JSON object
+                raise errors.ClientError((response, error))
         else:
             if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
                 logger.debug(
@@ -1168,16 +1169,16 @@ class ClientNetwork(object):
             self._send_request('GET', url, **kwargs), content_type=content_type)
 
     def _add_nonce(self, response):
-        if self.REPLAY_NONCE_HEADER in response.headers:
-            nonce = response.headers[self.REPLAY_NONCE_HEADER]
-            try:
-                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
-            except jose.DeserializationError as error:
-                raise errors.BadNonce(nonce, error)
-            logger.debug('Storing nonce: %s', nonce)
-            self._nonces.add(decoded_nonce)
-        else:
+        if self.REPLAY_NONCE_HEADER not in response.headers:
             raise errors.MissingNonce(response)
+
+        nonce = response.headers[self.REPLAY_NONCE_HEADER]
+        try:
+            decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
+        except jose.DeserializationError as error:
+            raise errors.BadNonce(nonce, error)
+        logger.debug('Storing nonce: %s', nonce)
+        self._nonces.add(decoded_nonce)
 
     def _get_nonce(self, url, new_nonce_url):
         if not self._nonces:

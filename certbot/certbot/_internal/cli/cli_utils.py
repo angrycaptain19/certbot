@@ -92,11 +92,14 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 
     def _get_help_string(self, action):
         helpstr = action.help
-        if '%(default)' not in action.help and '(default:' not in action.help:
-            if action.default != argparse.SUPPRESS:
-                defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-                if action.option_strings or action.nargs in defaulting_nargs:
-                    helpstr += ' (default: %(default)s)'
+        if (
+            '%(default)' not in action.help
+            and '(default:' not in action.help
+            and action.default != argparse.SUPPRESS
+        ):
+            defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+            if action.option_strings or action.nargs in defaulting_nargs:
+                helpstr += ' (default: %(default)s)'
         return helpstr
 
 

@@ -71,9 +71,7 @@ def isPassDirective(block):
         return True
     if isPass(block.parameters): # pragma: no cover
         return True
-    if isPass(block.filepath): # pragma: no cover
-        return True
-    return False
+    return bool(isPass(block.filepath))
 
 def isPassComment(comment):
     """ Checks if CommentNode should pass the assertion """
@@ -127,7 +125,7 @@ def isEqualVirtualHost(first, second):
         first.ancestor == second.ancestor
     )
 
-def assertEqualPathsList(first, second):  # pragma: no cover
+def assertEqualPathsList(first, second):    # pragma: no cover
     """
     Checks that the two lists of file paths match. This assertion allows for wildcard
     paths.
@@ -137,6 +135,6 @@ def assertEqualPathsList(first, second):  # pragma: no cover
     if any(isPass(path) for path in second):
         return
     for fpath in first:
-        assert any([fnmatch.fnmatch(fpath, spath) for spath in second])
+        assert any(fnmatch.fnmatch(fpath, spath) for spath in second)
     for spath in second:
-        assert any([fnmatch.fnmatch(fpath, spath) for fpath in first])
+        assert any(fnmatch.fnmatch(fpath, spath) for fpath in first)

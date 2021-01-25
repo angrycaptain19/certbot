@@ -329,4 +329,4 @@ def base_domain_name_guesses(domain):
     """
 
     fragments = domain.split('.')
-    return ['.'.join(fragments[i:]) for i in range(0, len(fragments))]
+    return ['.'.join(fragments[i:]) for i in range(len(fragments))]

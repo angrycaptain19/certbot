@@ -598,7 +598,7 @@ class MainTest(test_util.ConfigTestCase):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
 
-        toy_stdout = stdout if stdout else six.StringIO()
+        toy_stdout = stdout or six.StringIO()
         with mock.patch('certbot._internal.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot._internal.main.sys.stderr') as stderr:
                 with mock.patch("certbot.util.atexit"):
@@ -1195,9 +1195,9 @@ class MainTest(test_util.ConfigTestCase):
 
     def test_renew_no_hook_validation(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        args = ["renew", "--dry-run", "--post-hook=no-such-command",
-                "--disable-hook-validation"]
         with mock.patch("certbot._internal.hooks.post_hook"):
+            args = ["renew", "--dry-run", "--post-hook=no-such-command",
+                    "--disable-hook-validation"]
             self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
 

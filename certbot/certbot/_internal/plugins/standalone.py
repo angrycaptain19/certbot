@@ -195,16 +195,16 @@ def _handle_perform_error(error):
             "the appropriate permissions (for example, you "
             "aren't running this program as "
             "root).".format(error.port))
-    if error.socket_error.errno == socket_errors.EADDRINUSE:
-        display = zope.component.getUtility(interfaces.IDisplay)
-        msg = (
-            "Could not bind TCP port {0} because it is already in "
-            "use by another process on this system (such as a web "
-            "server). Please stop the program in question and "
-            "then try again.".format(error.port))
-        should_retry = display.yesno(msg, "Retry",
-                                     "Cancel", default=False)
-        if not should_retry:
-            raise errors.PluginError(msg)
-    else:
+    if error.socket_error.errno != socket_errors.EADDRINUSE:
         raise error
+
+    display = zope.component.getUtility(interfaces.IDisplay)
+    msg = (
+        "Could not bind TCP port {0} because it is already in "
+        "use by another process on this system (such as a web "
+        "server). Please stop the program in question and "
+        "then try again.".format(error.port))
+    should_retry = display.yesno(msg, "Retry",
+                                 "Cancel", default=False)
+    if not should_retry:
+        raise errors.PluginError(msg)

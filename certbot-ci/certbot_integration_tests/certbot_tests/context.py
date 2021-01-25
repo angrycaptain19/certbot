@@ -63,8 +63,7 @@ class IntegrationTestsContext(object):
         :param force_renew: set to False to not renew by default
         :return: output of certbot execution
         """
-        command = ['--authenticator', 'standalone', '--installer', 'null']
-        command.extend(args)
+        command = ['--authenticator', 'standalone', '--installer', 'null', *args]
         return certbot_call.certbot_test(
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
             self.config_dir, self.workspace, force_renew=force_renew)
